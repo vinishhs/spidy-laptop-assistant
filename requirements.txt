@@ -1,0 +1,9 @@
+customtkinter
+openwakeword
+pyttsx3
+faster-whisper
+screen-brightness-control
+pycaw
+comtypes
+wikipedia
+pyaudio

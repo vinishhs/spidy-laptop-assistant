@@ -5,11 +5,20 @@ def clean_text(text: str) -> str:
     text = text.lower()
     return re.sub(r'[^\w\s]', '', text).strip()
 
-def fuzzy_match(intent: str, command: str, threshold=0.7) -> bool:
+def fuzzy_match(intent: str, command: str, threshold=85) -> bool:
     """
     Returns true if the intent is found inside the command using simple matching.
-    For more complex systems, you'd use difflib.SequenceMatcher.
+    For more complex systems, you'd use difflib.SequenceMatcher or thefuzz.
     """
+    try:
+        from thefuzz import fuzz
+        # fuzz.token_set_ratio is resilient to filler words and out of order words
+        ratio = fuzz.token_set_ratio(intent, command)
+        if ratio >= threshold:
+            return True
+    except ImportError:
+        pass
+        
     import difflib
     intent_words = intent.split()
     command_words = command.split()

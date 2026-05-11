@@ -45,10 +45,11 @@ class IntentProcessor:
             # Faster whisper expects float32 between -1.0 and 1.0
             audio_float32 = audio_data.astype(np.float32) / 32768.0
             
-            prompt = "Volume, Brightness, Chrome, Wikipedia, Weather, Time, Sleep, Shut Down"
+            prompt = "Volume, Brightness, Chrome, YouTube, Screenshot"
             segments, info = self.whisper_model.transcribe(
                 audio_float32, 
                 beam_size=5,
+                patience=1.0,
                 initial_prompt=prompt,
                 vad_filter=True,
                 vad_parameters=dict(min_silence_duration_ms=800)

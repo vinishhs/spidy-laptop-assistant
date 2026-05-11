@@ -115,5 +115,14 @@ class ListenerThread:
                 logger.info("Silence detected. Stopping recording immediately.")
                 break
             
-        logger.info("Recording finished.")
-        return np.concatenate(frames)
+        logger.info("Recording finished. Applying noise reduction...")
+        audio_array = np.concatenate(frames)
+        
+        try:
+            import noisereduce as nr
+            # Apply noisereduce on the raw int16 array
+            reduced_audio = nr.reduce_noise(y=audio_array, sr=16000, prop_decrease=0.8)
+            return reduced_audio
+        except Exception as e:
+            logger.warning(f"Noise reduction skipped: {e}")
+            return audio_array

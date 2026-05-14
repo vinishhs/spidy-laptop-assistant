@@ -96,6 +96,12 @@ class ListenerThread:
         for _ in range(2):
             self.stream.read(1280, exception_on_overflow=False)
             
+        # Adjust for ambient noise (1-second duration)
+        ambient_chunks = [np.frombuffer(self.stream.read(1280, exception_on_overflow=False), dtype=np.int16) for _ in range(13)]
+        ambient_rms = np.sqrt(np.mean(np.square(np.concatenate(ambient_chunks), dtype=np.float64)))
+        dynamic_threshold = max(500, ambient_rms * 1.5)
+        logger.info(f"Ambient noise adjusted. Dynamic threshold: {dynamic_threshold:.2f}")
+
         # Hard cap based on seconds param
         for _ in range(max_chunks):
             data = self.stream.read(1280, exception_on_overflow=False)
@@ -105,7 +111,7 @@ class ListenerThread:
             chunk_array = np.frombuffer(data, dtype=np.int16)
             rms = np.sqrt(np.mean(np.square(chunk_array, dtype=np.float64)))
             
-            if rms > 500: # Threshold floor
+            if rms > dynamic_threshold: # Threshold floor
                 is_speaking = True
                 silence_count = 0
             elif is_speaking:

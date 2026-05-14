@@ -45,7 +45,7 @@ class IntentProcessor:
             # Faster whisper expects float32 between -1.0 and 1.0
             audio_float32 = audio_data.astype(np.float32) / 32768.0
             
-            prompt = "Volume, Brightness, Chrome, YouTube, Screenshot"
+            prompt = "open notepad, volume, brightness"
             segments, info = self.whisper_model.transcribe(
                 audio_float32, 
                 beam_size=5,
@@ -76,6 +76,16 @@ class IntentProcessor:
                 logger.warning("Low confidence text detected. Exiting silently.")
                 return ""
                 
+            # Garbage Filter
+            words = transcribed_text.split()
+            lower_text = transcribed_text.lower().strip()
+            valid_keywords = ["open", "set", "volume", "brightness", "weather", "search", "wiki", "launch"]
+            has_keyword = any(kw in lower_text for kw in valid_keywords)
+            
+            if len(words) > 10 or not has_keyword:
+                logger.warning("Garbage audio detected (too long or missing keywords). Exiting silently.")
+                return ""
+
             logger.info(f"Transcribed Text: '{transcribed_text}'")
             return self.process_text(transcribed_text)
             

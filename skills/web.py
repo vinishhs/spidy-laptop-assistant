@@ -36,9 +36,9 @@ class WikipediaSkill(BaseSkill):
         cleaned = clean_text(command)
         
         # Remove trigger words
-        query = command.lower()
+        query = command.lower().strip()
         for intent in self.intents:
-            query = query.replace(intent, "")
+            query = query.replace(intent.lower().strip(), "")
         query = query.strip()
         
         if not query:

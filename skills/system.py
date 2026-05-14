@@ -66,7 +66,7 @@ class SystemStateSkill(BaseSkill):
         
     def execute(self, command: str) -> str:
         logger.info(f"Executing SystemStateSkill for command: {command}")
-        cmd_lower = command.lower()
+        cmd_lower = command.lower().strip()
         if "sleep" in cmd_lower:
             os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
             return "Going to sleep."

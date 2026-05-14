@@ -16,9 +16,10 @@ class AppLauncherSkill(BaseSkill):
         logger.info(f"Executing AppLauncherSkill for command: {command}")
         cleaned = clean_text(command)
         
-        query = command.lower()
+        query = command.lower().strip()
         for intent in self.intents:
-            query = query.replace(intent, "")
+            # Ensure intent is also standardized just in case
+            query = query.replace(intent.lower().strip(), "")
         app_name = query.strip()
         
         try:

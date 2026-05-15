@@ -15,9 +15,11 @@ class ListenerThread:
     Runs an openWakeWord detection loop in a background thread.
     Communicates with the main GUI thread via queue.Queue.
     """
-    def __init__(self, message_queue: queue.Queue, wake_word_model: str = "hey_jarvis"):
+    def __init__(self, message_queue: queue.Queue, wake_word_model: str = "hey_jarvis", get_busy_state=None, speaker=None):
         self.message_queue = message_queue
         self.wake_word_model = wake_word_model
+        self.get_busy_state = get_busy_state
+        self.speaker = speaker
         
         logger.info(f"Initializing Wake Word Model: {wake_word_model}")
         try:
@@ -55,6 +57,13 @@ class ListenerThread:
                 
                 for model_name, score in prediction.items():
                     if score > 0.5:
+                        is_busy = self.get_busy_state() if self.get_busy_state else False
+                        is_speaking = self.speaker.is_speaking if self.speaker else False
+                        
+                        if is_busy or is_speaking:
+                            logger.info("Wake word detected but system is busy or speaking. Ignoring.")
+                            continue
+
                         logger.info(f"Wake word detected! Model: {model_name}, Score: {score}")
                         self.message_queue.put({"type": "WAKE_WORD_DETECTED", "score": score})
                         

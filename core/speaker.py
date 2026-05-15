@@ -5,12 +5,14 @@ class Speaker:
     def __init__(self):
         # We delay initialization to the threads to prevent Windows COM cross-thread errors
         self.rate = 170
+        self.is_speaking = False
         logger.info("Speaker configured for thread-safe cross-execution.")
 
     def speak(self, text: str):
         if not text:
             return
 
+        self.is_speaking = True
         logger.info(f"Speaking: '{text}'")
         try:
             # Re-init locally for the active thread to prevent UI lockup
@@ -30,3 +32,5 @@ class Speaker:
             pass
         except Exception as e:
             logger.error(f"TTS Engine execution failed: {e}")
+        finally:
+            self.is_speaking = False

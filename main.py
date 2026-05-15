@@ -8,8 +8,12 @@ from utils.logger import logger
 class SpidyApp:
     def __init__(self):
         self.message_queue = queue.Queue()
-        self.listener = ListenerThread(message_queue=self.message_queue)
         self.processor = IntentProcessor()
+        self.listener = ListenerThread(
+            message_queue=self.message_queue,
+            get_busy_state=lambda: self.is_busy,
+            speaker=self.processor.speaker
+        )
         self.interface = SpidyInterface(message_queue=self.message_queue)
         self.is_busy = False
         

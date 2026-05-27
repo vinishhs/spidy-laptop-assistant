@@ -23,11 +23,16 @@ class SpidyInterface:
         # 100x100 window positioned at bottom center (just above taskbar)
         screen_width = self.app.winfo_screenwidth()
         screen_height = self.app.winfo_screenheight()
-        window_width = 100
-        window_height = 100
-        center_x = int((screen_width / 2) - (window_width / 2))
-        bottom_y = int(screen_height - (window_height + 60))
-        self.app.geometry(f"100x100+{center_x}+{bottom_y}")
+        assistant_width = 100
+        assistant_height = 100
+        taskbar_height = 40  # Standard Windows taskbar height
+        
+        # Tkinter geometry position coordinates need to be scaled to physical pixels
+        scaling = self.app._get_window_scaling()
+        x = int(((screen_width - assistant_width) / 2) * scaling)
+        y = int((screen_height - assistant_height - taskbar_height - 30) * scaling)
+        
+        self.app.geometry(f"{assistant_width}x{assistant_height}+{x}+{y}")
 
         # Load assets (relative to core/)
         assets_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")

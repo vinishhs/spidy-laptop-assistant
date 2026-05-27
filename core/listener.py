@@ -112,7 +112,9 @@ class ListenerThread:
         logger.info(f"Ambient noise adjusted. Dynamic threshold: {dynamic_threshold:.2f}")
 
         # Hard cap based on seconds param
-        for _ in range(max_chunks):
+        max_initial_silence_chunks = int(5 * 12.5) # Siri-style 5s timeout
+        
+        for i in range(max_chunks):
             data = self.stream.read(1280, exception_on_overflow=False)
             frames.append(np.frombuffer(data, dtype=np.int16))
             
@@ -126,6 +128,10 @@ class ListenerThread:
             elif is_speaking:
                 silence_count += 1
                 
+            if not is_speaking and i > max_initial_silence_chunks:
+                logger.info("No speech detected within 5 seconds. Aborting recording.")
+                return np.array([])
+
             if is_speaking and silence_count > max_silence_chunks:
                 logger.info("Silence detected. Stopping recording immediately.")
                 break

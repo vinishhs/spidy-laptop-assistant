@@ -29,18 +29,19 @@ class SpidyApp:
                     if msg_type == "WAKE_WORD_DETECTED":
                         if not self.is_busy:
                             self.is_busy = True
-                            self.interface.set_listening()
+                            self.interface.set_state("LISTENING")
                             # Spawn background thread for recording and processing
                             threading.Thread(target=self.handle_command, daemon=True).start()
                         else:
                             logger.info("Wake word detected but system is busy. Ignoring.")
                         
                     elif msg_type == "PROCESSING":
-                        self.interface.set_processing()
+                        self.interface.set_state("PROCESSING")
                     elif msg_type == "SPEAKING":
-                        self.interface.set_speaking(msg.get("text", ""))
+                        # Return to wide eyes (LISTENING state) while speaking
+                        self.interface.set_state("LISTENING")
                     elif msg_type == "SLEEPING":
-                        self.interface.set_sleeping()
+                        self.interface.set_state("OFF")
                     elif msg_type == "EXIT":
                         self.interface.app.quit()
             except queue.Empty:
@@ -56,10 +57,10 @@ class SpidyApp:
     def handle_command(self):
         """Runs in a separate thread so the GUI doesn't freeze"""
         try:
-            # 1. Record Audio
+            # 1. Record Audio (VAD loop now handles the 5s timeout internally)
             audio_data = self.listener.record_command(seconds=10)
             
-            # 2. Update UI to processing
+            # 2. Update UI to processing (Squinting)
             self.message_queue.put({"type": "PROCESSING"})
             
             # 3. Transcribe and Process
@@ -71,8 +72,14 @@ class SpidyApp:
                 # Dynamic delay approximation for TTS to finish speaking
                 import time
                 time.sleep(1 + len(response) / 15)
+            else:
+                # Siri Timeout departure logic
+                logger.info("No command received. Playing departure phrase.")
+                departure_phrase = "Going back to sleep."
+                self.message_queue.put({"type": "SPEAKING", "text": departure_phrase})
+                self.processor.speaker.speak(departure_phrase)
                 
-            # 5. Back to sleeping
+            # 5. Back to sleeping (OFF state)
             self.message_queue.put({"type": "SLEEPING"})
             
         except Exception as e:

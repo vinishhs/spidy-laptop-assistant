@@ -1,82 +1,109 @@
 import customtkinter as ctk
+from PIL import Image
+import os
+import random
 from utils.logger import logger
 import queue
 
 class SpidyInterface:
     def __init__(self, message_queue: queue.Queue):
-        logger.info("Initializing CustomTkinter Interface...")
+        logger.info("Initializing Animated Spidy UI...")
         self.message_queue = message_queue
         
         self.app = ctk.CTk()
-        self.app.title("Spidy Assistant")
-        # Make the window float on top and remove title bar for a modern "pill" feel
-        self.app.attributes("-topmost", True)
+        
+        # Window setup: Borderless, Topmost, Transparent
         self.app.overrideredirect(True)
+        self.app.attributes("-topmost", True)
         
-        # Center the window at the top
+        # Pro-Tip logic: Use #010101 for better anti-aliasing transparency
+        self.app.attributes("-transparentcolor", "#010101")
+        self.app.configure(fg_color="#010101")
+        
+        # 200x200 window positioned at bottom right
         screen_width = self.app.winfo_screenwidth()
-        x = (screen_width // 2) - (400 // 2)
-        self.app.geometry(f"400x120+{x}+20")
-        
-        # UI Elements
-        self.frame = ctk.CTkFrame(master=self.app, corner_radius=20, fg_color="#1F2937")
-        self.frame.pack(pady=10, padx=10, fill="both", expand=True)
+        screen_height = self.app.winfo_screenheight()
+        x = screen_width - 220
+        y = screen_height - 220
+        self.app.geometry(f"200x200+{x}+{y}")
 
-        self.status_label = ctk.CTkLabel(
-            master=self.frame, 
-            text="Spidy is Sleeping", 
-            font=("Roboto", 20, "bold"),
-            text_color="#9CA3AF"
-        )
-        self.status_label.pack(pady=(15, 5))
+        # Load assets (relative to core/)
+        assets_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
+        try:
+            self.img_open = ctk.CTkImage(
+                light_image=Image.open(os.path.join(assets_path, "spidy_open.png")),
+                size=(200, 200)
+            )
+            self.img_half = ctk.CTkImage(
+                light_image=Image.open(os.path.join(assets_path, "spidy_half.png")),
+                size=(200, 200)
+            )
+        except Exception as e:
+            logger.error(f"Failed to load UI assets: {e}")
+            # Fallback (empty images or similar would go here)
+
+        self.image_label = ctk.CTkLabel(self.app, image=self.img_open, text="", fg_color="#010101")
+        self.image_label.pack()
+
+        self.is_blinking = False
+        self.blink_id = None
         
-        self.info_label = ctk.CTkLabel(
-            master=self.frame,
-            text="Waiting for 'Hey Jarvis'...",
-            font=("Roboto", 14),
-            text_color="#6B7280"
-        )
-        self.info_label.pack()
+        # Hide initially (Dormant state)
+        self.app.withdraw()
         
-        # Setup polling for the queue on the main thread
+        # Internal poll loop placeholder (overridden by main.py)
         self.app.after(100, self.poll_queue)
 
+    def set_state(self, state: str):
+        """
+        Transition Spidy between states: OFF, LISTENING, PROCESSING.
+        """
+        logger.info(f"UI State Transition: {state}")
+        
+        if state == "OFF":
+            self.stop_blink()
+            self.app.withdraw()
+        elif state == "LISTENING":
+            self.image_label.configure(image=self.img_open)
+            self.app.deiconify()
+            self.start_blink()
+        elif state == "PROCESSING":
+            self.stop_blink()
+            # Squinting eyes signal thinking
+            self.image_label.configure(image=self.img_half)
+            self.app.deiconify()
+
+    def start_blink(self):
+        if not self.is_blinking:
+            self.is_blinking = True
+            self.blink()
+
+    def stop_blink(self):
+        self.is_blinking = False
+        if self.blink_id:
+            self.app.after_cancel(self.blink_id)
+            self.blink_id = None
+
+    def blink(self):
+        """Non-blocking blink logic."""
+        if not self.is_blinking:
+            return
+        
+        # Switch to half-closed eyes
+        self.image_label.configure(image=self.img_half)
+        
+        # Return to wide eyes after 150ms
+        self.app.after(150, lambda: self.image_label.configure(image=self.img_open))
+        
+        # Schedule next blink at random interval (2-6 seconds)
+        next_blink = random.randint(2000, 6000)
+        self.blink_id = self.app.after(next_blink, self.blink)
+
     def poll_queue(self):
-        try:
-            while True:
-                msg = self.message_queue.get_nowait()
-                if msg["type"] == "WAKE_WORD_DETECTED":
-                    self.set_listening()
-                elif msg["type"] == "PROCESSING":
-                    self.set_processing()
-                elif msg["type"] == "SPEAKING":
-                    self.set_speaking(msg.get("text", ""))
-                elif msg["type"] == "SLEEPING":
-                    self.set_sleeping()
-                elif msg["type"] == "EXIT":
-                    self.app.quit()
-        except queue.Empty:
-            pass
-        finally:
-            self.app.after(100, self.poll_queue)
-            
-    def set_listening(self):
-        self.status_label.configure(text="Listening...", text_color="#3B82F6")
-        self.info_label.configure(text="I am ready for your command.", text_color="#E5E7EB")
-        
-    def set_processing(self):
-        self.status_label.configure(text="Processing...", text_color="#F59E0B")
-        self.info_label.configure(text="Understanding...", text_color="#E5E7EB")
-        
-    def set_speaking(self, text: str):
-        self.status_label.configure(text="Speaking", text_color="#10B981")
-        display_text = text if len(text) < 40 else text[:37] + "..."
-        self.info_label.configure(text=display_text, text_color="#E5E7EB")
-        
-    def set_sleeping(self):
-        self.status_label.configure(text="Spidy is Sleeping", text_color="#9CA3AF")
-        self.info_label.configure(text="Waiting for 'Hey Jarvis'...", text_color="#6B7280")
-        
+        """Placeholder for message queue polling logic."""
+        # Note: In main.py, this is overridden by a custom poll loop
+        self.app.after(100, self.poll_queue)
+
     def run(self):
-        logger.info("Starting main GUI loop.")
+        logger.info("Starting Spidy UI mainloop.")
         self.app.mainloop()

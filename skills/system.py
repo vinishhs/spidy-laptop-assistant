@@ -4,6 +4,7 @@ from utils.helpers import parse_percentage
 import screen_brightness_control as sbc
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from ctypes import cast, POINTER
+import ctypes
 from comtypes import CLSCTX_ALL
 import os
 
@@ -21,18 +22,26 @@ class VolumeSkill(BaseSkill):
         level = parse_percentage(command)
         
         try:
+            # 1. Get the raw speakers device object correctly
             devices = AudioUtilities.GetSpeakers()
+            if hasattr(devices, '_dev'):
+                devices = devices._dev
+            
+            # 2. Activate the IAudioEndpointVolume interface on that device
             interface = devices.Activate(
-                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
+                IAudioEndpointVolume._iid_, CLSCTX_ALL, None
+            )
+            
+            # 3. Cast the interface to a master volume control pointer
+            volume_control = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
             
             # SetMasterVolumeLevelScalar takes a float between 0.0 and 1.0
             scalar_level = level / 100.0
-            volume.SetMasterVolumeLevelScalar(scalar_level, None)
+            volume_control.SetMasterVolumeLevelScalar(scalar_level, None)
             
             return f"Volume set to {level} percent."
         except Exception as e:
-            logger.error(f"Failed to set volume: {e}")
+            logger.error(f"Failed to bind to Windows Audio Endpoint: {e}")
             return "I encountered an error setting the volume."
 
 class BrightnessSkill(BaseSkill):

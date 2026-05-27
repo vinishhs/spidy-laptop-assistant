@@ -20,30 +20,32 @@ class SpidyInterface:
         self.app.attributes("-transparentcolor", "#010101")
         self.app.configure(fg_color="#010101")
         
-        # 200x200 window positioned at bottom right
+        # 100x100 window positioned at bottom center (just above taskbar)
         screen_width = self.app.winfo_screenwidth()
         screen_height = self.app.winfo_screenheight()
-        x = screen_width - 220
-        y = screen_height - 220
-        self.app.geometry(f"200x200+{x}+{y}")
+        window_width = 100
+        window_height = 100
+        center_x = int((screen_width / 2) - (window_width / 2))
+        bottom_y = int(screen_height - (window_height + 60))
+        self.app.geometry(f"100x100+{center_x}+{bottom_y}")
 
         # Load assets (relative to core/)
         assets_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
         try:
             self.img_open = ctk.CTkImage(
                 light_image=Image.open(os.path.join(assets_path, "spidy_open.png")),
-                size=(200, 200)
+                size=(100, 100)
             )
             self.img_half = ctk.CTkImage(
                 light_image=Image.open(os.path.join(assets_path, "spidy_half.png")),
-                size=(200, 200)
+                size=(100, 100)
             )
         except Exception as e:
             logger.error(f"Failed to load UI assets: {e}")
             # Fallback (empty images or similar would go here)
 
         self.image_label = ctk.CTkLabel(self.app, image=self.img_open, text="", fg_color="#010101")
-        self.image_label.pack()
+        self.image_label.pack(expand=True, fill="both")
 
         self.is_blinking = False
         self.blink_id = None
